@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>LeoFood</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <!-- html2pdf -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+          integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-main">
+      <h1>LeoFood – ESILV</h1>
+      <label class="admin-toggle">
+        <input type="checkbox" id="adminModeToggle" />
+        Mode admin
+      </label>
+    </div>
+    <p class="topbar-sub">
+      Programme de restos pour aider les A1 à ne pas mourir de faim.
+    </p>
+  </header>
+
+  <nav class="main-menu">
+    <button data-screen="home" class="tab active">Accueil</button>
+    <button data-screen="week" class="tab">Ta semaine</button>
+    <button data-screen="criteria" class="tab">Tes critères</button>
+    <button data-screen="directory" class="tab">Annuaire</button>
+    <button data-screen="add" class="tab">Ajouter resto</button>
+    <button data-screen="guide" class="tab">Guide</button>
+  </nav>
+
+  <!-- ACCUEIL -->
+  <main id="home" class="screen active">
+    <section class="grid-menu">
+      <button class="card action-btn" data-screen-target="week">
+        <img src="img/freshman.jpg" alt="Étudiant de première année" class="card-img" />
+        <h2>Tu es en première année</h2>
+        <p>Tu souhaites savoir où manger cette semaine.</p>
+      </button>
+
+      <button class="card action-btn" data-screen-target="add">
+        <img src="img/older.jpg" alt="Étudiants plus âgés" class="card-img" />
+        <h2>Tu es plus âgé</h2>
+        <p>Tu souhaites ajouter une adresse pour les A1.</p>
+      </button>
+
+      <button class="card action-btn" data-screen-target="directory">
+        <img src="img/list.jpg" alt="Liste de restaurants" class="card-img" />
+        <h2>Annuaire</h2>
+        <p>Voir toutes les adresses disponibles.</p>
+      </button>
+
+      <button class="card action-btn" data-screen-target="guide">
+        <img src="img/guide.jpg" alt="Guide LeoFood" class="card-img" />
+        <h2>Guide d'utilisation</h2>
+        <p>Comprendre comment LeoFood fonctionne.</p>
+      </button>
+    </section>
+  </main>
+
+  <!-- TA SEMAINE -->
+  <main id="week" class="screen">
+    <h2>Ta semaine</h2>
+    <p>Programme personnalisé près de ton campus ESILV, selon tes critères.</p>
+
+    <div class="week-controls">
+      <label for="campusSelect">Campus :</label>
+      <select id="campusSelect">
+        <option value="laDefense" selected>La Défense</option>
+        <option value="nanterre">Nanterre</option>
+        <option value="nantes">Nantes</option>
+        <option value="montpellier">Montpellier</option>
+      </select>
+
+      <button id="regenWeekBtn" class="btn small">Régénérer toute la semaine</button>
+      <button id="gotoCriteriaBtn" class="btn small">Modifier mes critères</button>
+      <button id="exportPdfBtn" class="btn small">Exporter cette semaine en PDF</button>
+      <button id="toggleReorderBtn" class="btn small">Réorganiser les jours</button>
+    </div>
+
+    <p class="hint">
+      En mode réorganisation, fais glisser les jours pour changer l'ordre.
+    </p>
+
+    <ul id="weekList" class="day-list"></ul>
+
+    <section class="map-section">
+      <h3>Carte des restos de ta semaine</h3>
+      <div id="map"></div>
+      <p class="hint">
+        Appuie sur un jour ou une adresse pour voir sa position sur la carte.
+      </p>
+    </section>
+  </main>
+
+  <!-- TES CRITÈRES -->
+  <main id="criteria" class="screen">
+    <h2>Tes critères</h2>
+    <p>Ces critères sont utilisés pour générer ton programme (mais ne sont pas sauvegardés en base).</p>
+
+    <form id="criteriaForm">
+      <fieldset>
+        <legend>Type d'alimentation</legend>
+        <div class="tags">
+          <label><input type="checkbox" name="tags" value="vegetarien" /> Végétarien</label>
+          <label><input type="checkbox" name="tags" value="vegan" /> Vegan</label>
+          <label><input type="checkbox" name="tags" value="halal" /> Halal</label>
+          <label><input type="checkbox" name="tags" value="sansPorc" /> Sans porc</label>
+          <label><input type="checkbox" name="tags" value="bio" /> Bio</label>
+          <label><input type="checkbox" name="tags" value="sansGluten" /> Sans gluten</label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Type de restaurant</legend>
+        <div class="tags">
+          <label><input type="checkbox" name="tags" value="fastFood" /> Fast‑food</label>
+          <label><input type="checkbox" name="tags" value="brasserie" /> Brasserie</label>
+          <label><input type="checkbox" name="tags" value="ru" /> Restaurant universitaire</label>
+          <label><input type="checkbox" name="tags" value="foodTruck" /> Food‑truck</label>
+          <label><input type="checkbox" name="tags" value="sandwicherie" /> Sandwicherie</label>
+          <label><input type="checkbox" name="tags" value="cafe" /> Café / salon de thé</label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Ambiance & budget</legend>
+        <div class="tags">
+          <label><input type="checkbox" name="tags" value="pasCher" /> Pas cher</label>
+          <label><input type="checkbox" name="tags" value="rapide" /> Service rapide</label>
+          <label><input type="checkbox" name="tags" value="cool" /> Ambiance cool</label>
+          <label><input type="checkbox" name="tags" value="calme" /> Calme pour bosser</label>
+          <label><input type="checkbox" name="tags" value="aEmporter" /> À emporter</label>
+          <label><input type="checkbox" name="tags" value="terrasse" /> Terrasse</label>
+        </div>
+        <label>
+          Budget moyen par repas (€) :
+          <input type="number" id="budgetInput" min="5" max="40" step="1" value="10" />
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Temps & allergies</legend>
+        <label>
+          Temps total pour manger (minutes) :
+          <input type="number" id="timeAvailableInput" min="10" max="180" step="5" value="60" />
+        </label>
+        <label>
+          Temps de trajet max (minutes) :
+          <input type="number" id="travelTimeMaxInput" min="5" max="60" step="5" value="20" />
+        </label>
+        <label>
+          Allergies :
+          <input type="text" id="allergiesInput" placeholder="Gluten, arachides, lactose..." />
+        </label>
+      </fieldset>
+
+      <button type="submit" class="btn">Mettre à jour les critères</button>
+    </form>
+  </main>
+
+  <!-- ANNUAIRE -->
+  <main id="directory" class="screen">
+    <h2>Annuaire des adresses</h2>
+    <div class="directory-filters">
+      <label>Campus :
+        <select id="directoryCampusFilter">
+          <option value="all">Tous</option>
+          <option value="laDefense">La Défense</option>
+          <option value="nanterre">Nanterre</option>
+          <option value="nantes">Nantes</option>
+          <option value="montpellier">Montpellier</option>
+        </select>
+      </label>
+    </div>
+    <ul id="directoryList" class="restaurant-list"></ul>
+  </main>
+
+  <!-- AJOUT RESTO -->
+  <main id="add" class="screen">
+    <h2>Ajouter un restaurant</h2>
+    <p class="highlight">Aide les A1 à ne pas mourir de faim.</p>
+
+    <form id="addRestaurantForm">
+      <label>
+        Campus :
+        <select id="addCampus">
+          <option value="laDefense">La Défense</option>
+          <option value="nanterre">Nanterre</option>
+          <option value="nantes">Nantes</option>
+          <option value="montpellier">Montpellier</option>
+        </select>
+      </label>
+      <label>
+        Nom du restaurant :
+        <input type="text" id="addName" required />
+      </label>
+      <label>
+        Adresse complète :
+        <input type="text" id="addAddress" required />
+      </label>
+      <label>
+        Description / type de cuisine :
+        <textarea id="addDescription" required></textarea>
+      </label>
+      <label>
+        Fourchette de prix moyenne (€) :
+        <input type="number" id="addPrice" min="1" max="50" step="1" />
+      </label>
+      <label>
+        Temps de trajet estimé depuis le campus (minutes) :
+        <input type="number" id="addTravelTime" min="1" max="60" />
+      </label>
+      <label>
+        Menu optimal à conseiller :
+        <textarea id="addOptimalMenu" required></textarea>
+      </label>
+      <label>
+        Ton pseudo (pour les questions) :
+        <input type="text" id="addAuthor" required />
+      </label>
+
+      <fieldset>
+        <legend>Tags pour ce restaurant</legend>
+        <p>Type d'alimentation</p>
+        <div id="addTagsFood" class="tags">
+          <label><input type="checkbox" value="vegetarien" /> Végétarien</label>
+          <label><input type="checkbox" value="vegan" /> Vegan</label>
+          <label><input type="checkbox" value="halal" /> Halal</label>
+          <label><input type="checkbox" value="sansPorc" /> Sans porc</label>
+          <label><input type="checkbox" value="bio" /> Bio</label>
+          <label><input type="checkbox" value="sansGluten" /> Sans gluten</label>
+        </div>
+        <p>Type de restaurant</p>
+        <div id="addTagsType" class="tags">
+          <label><input type="checkbox" value="fastFood" /> Fast‑food</label>
+          <label><input type="checkbox" value="brasserie" /> Brasserie</label>
+          <label><input type="checkbox" value="ru" /> RU</label>
+          <label><input type="checkbox" value="foodTruck" /> Food‑truck</label>
+          <label><input type="checkbox" value="sandwicherie" /> Sandwicherie</label>
+          <label><input type="checkbox" value="cafe" /> Café</label>
+        </div>
+        <p>Ambiance & service</p>
+        <div id="addTagsMood" class="tags">
+          <label><input type="checkbox" value="pasCher" /> Pas cher</label>
+          <label><input type="checkbox" value="rapide" /> Rapide</label>
+          <label><input type="checkbox" value="cool" /> Ambiance cool</label>
+          <label><input type="checkbox" value="calme" /> Calme</label>
+          <label><input type="checkbox" value="aEmporter" /> À emporter</label>
+          <label><input type="checkbox" value="terrasse" /> Terrasse</label>
+        </div>
+      </fieldset>
+
+      <div class="new-tag-request">
+        <label>
+          Tu veux un nouveau tag ?
+          <input type="text" id="newTagRequestInput" placeholder="Ex : brunch, poké..." />
+        </label>
+        <button type="button" id="newTagRequestBtn" class="btn small">
+          Demander l'ajout du tag
+        </button>
+      </div>
+      <p id="newTagMessage" class="hint"></p>
+
+      <button type="submit" class="btn">Ajouter l’adresse</button>
+    </form>
+  </main>
+
+  <!-- GUIDE -->
+  <main id="guide" class="screen">
+    <h2>Guide d'utilisation</h2>
+    <p>
+      LeoFood aide les étudiant·e·s de première année de l’ESILV à choisir où manger,
+      grâce à un programme personnalisé pour la semaine en fonction de leur budget,
+      de leurs préférences alimentaires, de leur temps disponible et de leur campus.
+    </p>
+    <ul>
+      <li>Commence par “Ta semaine” : un programme est généré automatiquement avec les critères actuels.</li>
+      <li>Tu peux ajuster tes préférences dans “Tes critères” puis régénérer tout ou partie de la semaine.</li>
+      <li>Les étudiant·e·s plus âgé·e·s ajoutent des adresses détaillées dans “Ajouter resto”.</li>
+      <li>Dans “Annuaire” et “Ta semaine”, clique sur un resto pour voir sa fiche, le menu optimal, la carte, poser une question et donner un feedback.</li>
+      <li>En mode admin, tu peux supprimer des adresses de l’annuaire si elles ne sont plus pertinentes.</li>
+    </ul>
+  </main>
+
+  <!-- Modale restaurant -->
+  <div id="restaurantModal" class="modal hidden">
+    <div class="modal-content">
+      <button class="close-modal">&times;</button>
+      <h2 id="modalName"></h2>
+      <p id="modalDescription"></p>
+      <p id="modalOptimalMenu"></p>
+      <p id="modalMeta"></p>
+
+      <h3>Poser une question à l’auteur</h3>
+      <form id="questionForm">
+        <textarea id="questionText"
+          placeholder="Ta question (ex : y a-t-il des options sans gluten ?)"></textarea>
+        <button type="submit" class="btn small">Envoyer la question</button>
+      </form>
+
+      <h3>Donner un feedback</h3>
+      <form id="feedbackForm">
+        <label>
+          Note :
+          <select id="feedbackRating">
+            <option value="5">😍 Trop bien</option>
+            <option value="4">🙂 Bien</option>
+            <option value="3">😐 Moyen</option>
+            <option value="2">🙁 Pas terrible</option>
+            <option value="1">🤢 À éviter</option>
+          </select>
+        </label>
+        <label>
+          Commentaire :
+          <textarea id="feedbackComment"
+            placeholder="Pourquoi tu as aimé ou pas ?"></textarea>
+        </label>
+        <button type="submit" class="btn small">Envoyer le feedback</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
